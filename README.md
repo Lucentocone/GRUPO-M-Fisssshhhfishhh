@@ -1,8 +1,8 @@
 # TP N°2 - SDD Eventos Académicos
 
 ## Integrantes
-- Emanuel Cardozo
+.Emanuel Cardozo
 
 
 
--Wilmar alias el paraguayo
+.Wilmar alias el paraguayo

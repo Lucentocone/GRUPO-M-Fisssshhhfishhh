@@ -7,4 +7,4 @@
 .Francisco Lozano
 
 
-.Wilmar alias el paraguayo
+Wilmar alias el paraguayo

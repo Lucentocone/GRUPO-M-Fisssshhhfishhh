@@ -10,6 +10,7 @@ El sistema permitirá:
 - Crear y gestionar eventos
 - Inscribir participantes
 - Gestionar roles (organizador, participante, disertante)
+- Acreditar participantes
 - Generar certificados
 - Generar reportes
 

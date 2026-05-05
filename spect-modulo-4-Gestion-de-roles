@@ -1,0 +1,154 @@
+<h1>Spec – Módulo: Gestión de Roles</h1>
+
+<h2>1. Objetivo y Contexto</h2>
+
+<h3>Objetivo</h3>
+Administrar los roles de los usuarios dentro de cada evento académico, definiendo sus permisos y responsabilidades según su participación como organizador, participante o disertante.
+
+<h3>Contexto</h3>
+En un evento académico, los usuarios pueden desempeñar diferentes funciones. Este módulo permite asignar, modificar y consultar roles asociados a un usuario dentro de un evento específico.
+
+Los roles son fundamentales para controlar el acceso a funcionalidades del sistema y garantizar que cada usuario pueda realizar únicamente las acciones permitidas.
+
+---
+
+<h2>2. Historias de Usuario y Criterios de Aceptación</h2>
+
+<h3>HU 1 – Asignar rol a usuario</h3>
+Como organizador,  
+quiero asignar uno o más roles a un usuario en un evento,  
+para definir su participación.
+
+<b>Criterios de Aceptación:</b>
+- El sistema debe permitir seleccionar un usuario inscripto en el evento
+- Se deben poder asignar los roles: organizador, participante, disertante
+- Un usuario puede tener más de un rol en el mismo evento
+- La asignación debe persistirse correctamente
+- Solo usuarios con rol organizador pueden asignar roles
+
+---
+
+<h3>HU 2 – Consultar roles de un usuario</h3>
+Como usuario,  
+quiero visualizar mis roles en un evento,  
+para conocer mis permisos dentro del sistema.
+
+<b>Criterios de Aceptación:</b>
+- El sistema debe mostrar todos los roles asociados al usuario en el evento
+- Si el usuario no tiene roles asignados, debe indicarse explícitamente
+- La información debe estar disponible al acceder al detalle del evento
+
+---
+
+<h3>HU 3 – Modificar roles</h3>
+Como organizador,  
+quiero modificar los roles de un usuario,  
+para actualizar su participación en el evento.
+
+<b>Criterios de Aceptación:</b>
+- Se deben poder agregar o eliminar roles existentes
+- Los cambios deben reflejarse inmediatamente
+- No se deben permitir roles inválidos
+- Solo organizadores pueden realizar modificaciones
+
+---
+
+<h3>HU 4 – Validar permisos según rol</h3>
+Como sistema,  
+quiero validar las acciones de los usuarios según su rol,  
+para garantizar seguridad y control de acceso.
+
+<b>Criterios de Aceptación:</b>
+- Un participante no puede gestionar eventos
+- Un disertante puede estar asociado a actividades específicas
+- Un organizador tiene control total sobre el evento
+- El sistema debe bloquear acciones no permitidas
+
+---
+
+<h2>3. Requisitos Funcionales y Reglas de Negocio</h2>
+
+<h3>Requisitos Funcionales</h3>
+
+- RF1: Asignar roles a usuarios dentro de un evento
+- RF2: Consultar roles de un usuario
+- RF3: Modificar roles existentes
+- RF4: Validar permisos en base a roles
+- RF5: Asociar roles a eventos específicos
+
+---
+
+<h3>Reglas de Negocio</h3>
+
+- RN1: Un usuario puede tener múltiples roles en un mismo evento
+- RN2: Todo evento debe tener al menos un organizador
+- RN3: No se puede eliminar el único organizador de un evento
+- RN4: Los roles válidos son: organizador, participante, disertante
+- RN5: Los permisos del sistema dependen del rol asignado
+- RN6: La asignación de roles es específica por evento (no global)
+
+---
+
+<h2>4. Restricciones Técnicas Específicas de este Módulo</h2>
+
+- Implementación mediante API REST
+- Endpoints protegidos con autenticación
+- Validación de roles en backend
+- Uso de identificadores únicos para usuarios y eventos
+- El sistema debe permitir agregar nuevos roles en el futuro sin afectar la estructura actual
+
+---
+
+<h2>5. Modelo de Datos de este Módulo</h2>
+
+<b>Entidad: Usuario</b>
+- id (UUID)
+- nombre (String)
+- email (String)
+
+<b>Entidad: Evento</b>
+- id (UUID)
+- nombre (String)
+
+<b>Entidad: Rol</b>
+- id (UUID)
+- nombre (String) → {organizador, participante, disertante}
+
+<b>Entidad: UsuarioEventoRol</b>
+- id (UUID)
+- usuario_id (UUID)
+- evento_id (UUID)
+- rol_id (UUID)
+
+---
+
+<h2>6. Plan de Tareas</h2>
+
+1. Definir entidad Rol  
+2. Crear relación entre Usuario, Evento y Rol  
+3. Implementar endpoint para asignación de roles  
+4. Implementar consulta de roles por usuario  
+5. Implementar modificación de roles  
+6. Implementar validación de permisos  
+7. Realizar pruebas del módulo  
+
+---
+
+<h2>7. Estrategia de Verificación</h2>
+
+<h3>Pruebas Unitarias</h3>
+- Validar asignación correcta de roles  
+- Validar que no se permitan roles inválidos  
+- Validar reglas de negocio (mínimo un organizador)  
+
+<h3>Pruebas de Integración</h3>
+- Flujo completo: asignar → consultar → modificar roles  
+- Validación de persistencia de datos  
+
+<h3>Pruebas Funcionales</h3>
+- Visualización de roles por usuario  
+- Restricción de acciones según rol  
+- Modificación de roles desde interfaz  
+
+<h3>Criterio de Aceptación General</h3>
+El módulo se considera completo cuando todas las historias de usuario cumplen sus criterios de aceptación y las reglas de negocio se validan correctamente.

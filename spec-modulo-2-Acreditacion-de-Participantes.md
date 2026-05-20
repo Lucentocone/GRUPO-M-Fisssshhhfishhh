@@ -111,6 +111,8 @@ El estado de acreditación de cada participante es un dato crítico que consumen
 | T-3.7 | Desarrollar vista de escaneo QR (integración jsQR / html5-qrcode) | T-3.3 | 4h |
 | T-3.8 | Desarrollar vista de lista de acreditados con contadores y exportación CSV | T-3.4 | 3h |
 | T-3.9 | Pruebas de integración y carga | T-3.6, T-3.7, T-3.8 | 3h |
+| T3.10 | Implementar búsqueda en tiempo real por nombre/DNI (frontend) | T3.1 | 2h |
+
 
 ---
 

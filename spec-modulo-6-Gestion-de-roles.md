@@ -10,8 +10,8 @@ Administrar los roles de los usuarios dentro de cada evento académico, definien
 En un evento académico, los usuarios pueden desempeñar diferentes funciones. Este módulo permite asignar, modificar y consultar roles asociados a un usuario dentro de un evento específico.
 
 Los roles son fundamentales para controlar el acceso a funcionalidades del sistema y garantizar que cada usuario pueda realizar únicamente las acciones permitidas.
-
----
+ 
+--- 
 
 **2. HISTORIAS DE USUARIO Y CRITERIOS DE ACEPTACIÓN**
 

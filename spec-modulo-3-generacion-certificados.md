@@ -9,8 +9,8 @@ Automatizar la creación, emisión y distribución de certificados digitales par
 **Contexto**
 Al finalizar un evento académico, es un requisito indispensable entregar constancias de participación. Realizar este proceso de forma manual es propenso a errores e ineficiente. Este módulo permite configurar plantillas personalizadas por evento, generar los documentos en formato PDF de manera dinámica (individual o masiva) y proveer un mecanismo para su validación pública de autenticidad.
 
----
-
+---   
+  
 **2. HISTORIAS DE USUARIO Y CRITERIOS DE ACEPTACIÓN**
 
 **HU 1 – Configurar plantilla de certificado**

@@ -9,7 +9,7 @@ Criterio: El sistema debe confirmar la inscripción solo si hay cupo disponible 
 HU 2.2: Como personal del evento, quiero inscribir a un participante manualmente.
 
 Criterio: El personal debe poder saltar la restricción de "fecha límite" si fuera necesario (cortesía).
-
+       
 3. Requisitos Funcionales y Reglas de Negocio
 RF: El sistema debe enviar un mail automático de confirmación al usuario tras inscribirse.
 

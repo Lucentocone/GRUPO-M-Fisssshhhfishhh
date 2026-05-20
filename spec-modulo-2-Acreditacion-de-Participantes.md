@@ -13,7 +13,7 @@ La acreditación se puede procesar de dos formas:
 - Manual: Búsqueda rápida por nombre o documento.
 - Agilizada: Escaneo del código QR enviado al participante tras su registro.
 El estado de acreditación de cada participante es un dato crítico que consumen los módulos de Certificados y Reportes.
-
+ 
 ---
 
 ## 2. Historias de Usuario y Criterios de Aceptación

@@ -34,3 +34,5 @@ Desarrollar el servicio de notificaciones por email.
 Prueba de Carga: Simular 10 inscripciones simultáneas para un evento con solo 5 cupos y verificar que solo 5 sean exitosas.
 
 Prueba de Integración: Verificar que al realizar una inscripción, el contador de cupos del evento se actualice correctamente.
+
+Criterio de Seguridad (OWASP - Prevención de Inyección SQL): El sistema debe sanitizar estrictamente todos los datos de entrada en el formulario web de inscripción al evento. Las consultas a la base de datos para registrar nuevos participantes o verificar la disponibilidad de cupos deben ejecutarse de manera obligatoria utilizando Prepared Statements para evitar cualquier tipo de inyección SQL.

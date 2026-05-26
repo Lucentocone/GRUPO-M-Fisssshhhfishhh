@@ -29,6 +29,14 @@ El listado de eventos es de acceso público (sin autenticación), mientras que l
 - La fecha de fin no puede ser anterior a la fecha de inicio.
 - La fecha límite de inscripción no puede ser posterior a la fecha de inicio del evento.
 
+#### Enriquecimiento de Seguridad (OWASP)
+- El sistema debe sanitizar y validar todos los datos ingresados en los formularios de creación de eventos para prevenir ataques de inyección SQL.
+- Todas las consultas a la base de datos deben utilizar Prepared Statements o consultas parametrizadas.
+- Los endpoints de creación de eventos deben requerir autenticación JWT válida y verificar el rol `organizador`.
+- Los campos `titulo`, `descripcion` y `lugar_o_enlace` deben validar longitud máxima y caracteres permitidos para prevenir ataques XSS.
+- El sistema debe registrar en logs seguros las acciones de creación de eventos indicando usuario, fecha y acción realizada.
+- Se debe implementar rate limiting para evitar abuso o ataques automatizados sobre el endpoint de creación de eventos.
+
 ### HU 4.2 – Editar un evento
 **Como** organizador,
 **quiero** modificar los datos de un evento que aún no fue publicado o que está publicado,
@@ -114,15 +122,20 @@ El listado de eventos es de acceso público (sin autenticación), mientras que l
 - **RT-4.1:** El listado público de eventos debe estar paginado en el backend (máximo 20 eventos por página) para evitar respuestas masivas.
 - **RT-4.2:** El cálculo de cupos disponibles debe hacerse en el backend (nunca en el cliente) para evitar condiciones de carrera con el módulo de Inscripción.
 - **RT-4.3:** La transición automática a estado `finalizado` debe implementarse mediante un job programado (cron) que se ejecute al menos una vez por hora.
-- **RT-4.4:** Los endpoints de solo lectura (listado y detalle) no requieren autenticación. Los endpoints de escritura (crear, editar, publicar, cancelar) requieren JWT con claim de rol `organizador`. Ver `Contracts.md` para el formato de respuestas y autenticación.
-- **RT-4.5:** Los filtros del listado deben procesarse en el backend mediante parámetros de query (`?tipo=congreso&estado=proximo&page=1`), nunca filtrando en memoria en el servidor sobre colecciones completas.
-- **RT-4.6:** El campo `tipo` debe ser un ENUM cerrado en base de datos para garantizar integridad. La incorporación de nuevos tipos requiere una migración controlada.
+- **RT-4.4:** Los endpoints de solo lectura (listado y detalle) no requieren autenticación. Los endpoints de escritura (crear, editar, publicar, cancelar) requieren JWT con claim de rol `organizador`.
+- **RT-4.5:** Los filtros del listado deben procesarse en el backend mediante parámetros de query (`?tipo=congreso&estado=proximo&page=1`).
+- **RT-4.6:** El campo `tipo` debe ser un ENUM cerrado en base de datos para garantizar integridad.
+- **RT-4.7:** Todas las consultas SQL deben ejecutarse utilizando Prepared Statements o consultas parametrizadas para prevenir SQL Injection.
+- **RT-4.8:** El sistema debe validar y sanitizar todas las entradas provenientes de formularios y parámetros HTTP.
+- **RT-4.9:** El sistema debe registrar logs de auditoría para operaciones críticas realizadas por organizadores.
+- **RT-4.10:** El sistema debe implementar rate limiting en endpoints críticos para prevenir ataques automatizados.
 
 ---
 
 ## 5. Modelo de Datos de este Módulo
 
 ### Entidad: `Evento`
+
 | Campo | Tipo | Restricción | Descripción |
 |---|---|---|---|
 | `id_evento` | UUID | PK | Identificador único |
@@ -133,26 +146,14 @@ El listado de eventos es de acceso público (sin autenticación), mientras que l
 | `modalidad` | ENUM | NOT NULL | `presencial`, `virtual`, `hibrida` |
 | `estado` | ENUM | NOT NULL, DEFAULT `borrador` | `borrador`, `publicado`, `finalizado`, `cancelado` |
 | `fecha_inicio` | DATETIME | NOT NULL | Inicio del evento |
-| `fecha_fin` | DATETIME | NOT NULL | Fin del evento (debe ser > fecha_inicio) |
+| `fecha_fin` | DATETIME | NOT NULL | Fin del evento |
 | `lugar_o_enlace` | VARCHAR(500) | NULLABLE | Dirección física o URL |
-| `cupo_minimo` | INTEGER | NULLABLE, CHECK > 0 | Cupo mínimo para realizarse |
+| `cupo_minimo` | INTEGER | NULLABLE, CHECK > 0 | Cupo mínimo |
 | `cupo_maximo` | INTEGER | NULLABLE, CHECK > 0 | Límite de inscriptos |
-| `fecha_limite_inscripcion` | DATETIME | NULLABLE | Cierre de inscripciones (DEFAULT = fecha_inicio) |
-| `fecha_publicacion` | DATETIME | NULLABLE | Timestamp de la publicación |
-| `creado_el` | DATETIME | NOT NULL, DEFAULT NOW() | Fecha de creación del registro |
+| `fecha_limite_inscripcion` | DATETIME | NULLABLE | Cierre de inscripciones |
+| `fecha_publicacion` | DATETIME | NULLABLE | Timestamp de publicación |
+| `creado_el` | DATETIME | NOT NULL, DEFAULT NOW() | Fecha de creación |
 | `actualizado_el` | DATETIME | NOT NULL | Última modificación |
-
-### Entidad: `Actividad` (cronograma del evento)
-| Campo | Tipo | Restricción | Descripción |
-|---|---|---|---|
-| `id_actividad` | UUID | PK | Identificador único |
-| `id_evento` | UUID | FK → Evento, NOT NULL | Evento al que pertenece |
-| `titulo` | VARCHAR(200) | NOT NULL | Nombre de la actividad |
-| `descripcion` | TEXT | NULLABLE | Detalle de la actividad |
-| `hora_inicio` | DATETIME | NOT NULL | Inicio de la actividad |
-| `hora_fin` | DATETIME | NOT NULL | Fin de la actividad |
-| `sala_o_enlace` | VARCHAR(200) | NULLABLE | Sala o URL específica |
-| `id_disertante` | UUID | FK → Usuario, NULLABLE | Disertante asignado |
 
 ---
 
@@ -160,39 +161,44 @@ El listado de eventos es de acceso público (sin autenticación), mientras que l
 
 | Ticket | Descripción | Depende de | Estimación |
 |---|---|---|---|
-| **T-4.1** | BD: Crear tabla `Evento` con sus restricciones, índices y ENUMs | — | 2h |
-| **T-4.2** | BD: Crear tabla `Actividad` con FK a Evento | T-4.1 | 1h |
-| **T-4.3** | API: `POST /eventos` – Crear evento (requiere JWT organizador) | T-4.1 | 3h |
-| **T-4.4** | API: `PUT /eventos/{id}` – Editar evento con validaciones de estado | T-4.3 | 3h |
-| **T-4.5** | API: `PATCH /eventos/{id}/publicar` – Transición borrador → publicado | T-4.4 | 2h |
-| **T-4.6** | API: `PATCH /eventos/{id}/cancelar` – Transición publicado → cancelado + notificación email | T-4.5 | 3h |
-| **T-4.7** | API: `GET /eventos` – Listado público con filtros y paginación | T-4.1 | 4h |
-| **T-4.8** | API: `GET /eventos/{id}` – Detalle público con cupos en tiempo real | T-4.7 | 2h |
-| **T-4.9** | API: CRUD de `Actividad` (`POST /eventos/{id}/actividades`, etc.) | T-4.2 | 3h |
-| **T-4.10** | Cron job: Transición automática publicado → finalizado al vencer fecha_fin | T-4.5 | 2h |
-| **T-4.11** | QA: Tests unitarios, de integración y smoke test | T-4.8, T-4.10 | 3h |
-
-**Estimación total: ~28 horas**
+| **T-4.1** | BD: Crear tabla `Evento` con restricciones | — | 2h |
+| **T-4.2** | API: `POST /eventos` – Crear evento | T-4.1 | 3h |
+| **T-4.3** | API: `PUT /eventos/{id}` – Editar evento | T-4.2 | 3h |
+| **T-4.4** | API: `PATCH /eventos/{id}/publicar` | T-4.3 | 2h |
+| **T-4.5** | API: `PATCH /eventos/{id}/cancelar` | T-4.4 | 3h |
+| **T-4.6** | API: `GET /eventos` – Listado público | T-4.1 | 4h |
+| **T-4.7** | QA: Tests unitarios y de integración | T-4.6 | 3h |
 
 ---
 
 ## 7. Estrategia de Verificación
 
 ### Pruebas Unitarias
-- **PU-4.1:** Verificar que el servicio rechace la creación de un evento con `fecha_fin < fecha_inicio` → Error HTTP 422.
-- **PU-4.2:** Verificar que no se pueda publicar un evento con campos obligatorios incompletos → HTTP 422.
-- **PU-4.3:** Verificar que no se pueda editar un evento en estado `finalizado` → HTTP 409.
-- **PU-4.4:** Verificar que la reducción de `cupo_maximo` a un valor menor que los inscriptos actuales sea bloqueada → HTTP 409.
-- **PU-4.5:** Verificar que la transición de estado solo siga los caminos permitidos (ej: `cancelado` → `publicado` debe fallar).
+- **PU-4.1:** Verificar que el servicio rechace la creación de un evento con `fecha_fin < fecha_inicio`.
+- **PU-4.2:** Verificar que no se pueda publicar un evento con campos obligatorios incompletos.
+- **PU-4.3:** Verificar que no se pueda editar un evento en estado `finalizado`.
+- **PU-4.4:** Verificar que la reducción de `cupo_maximo` a un valor menor que los inscriptos actuales sea bloqueada.
+- **PU-4.5:** Verificar que la transición de estado solo siga los caminos permitidos.
 
 ### Pruebas de Integración
-- **PI-4.1:** Crear evento → publicar → verificar que aparece en `GET /eventos` → inscribir un participante → verificar que el cupo disponible se reduce en 1.
-- **PI-4.2:** Crear evento → publicar → cancelar → verificar que los inscriptos reciben email de cancelación → verificar que no se aceptan nuevas inscripciones.
-- **PI-4.3:** Crear evento con `fecha_fin` en el pasado → publicar → ejecutar cron → verificar que el estado cambia a `finalizado`.
+- **PI-4.1:** Crear evento → publicar → verificar aparición en listado público.
+- **PI-4.2:** Cancelar evento → verificar notificación email.
+- **PI-4.3:** Ejecutar cron → verificar transición automática a `finalizado`.
+
+### Pruebas de Seguridad
+- **PSeg-4.1:** Verificar que un usuario sin rol `organizador` no pueda crear eventos → HTTP 403.
+- **PSeg-4.2:** Verificar que un usuario no pueda editar eventos creados por otro organizador → HTTP 403.
+- **PSeg-4.3:** Verificar que entradas maliciosas SQL (`' OR '1'='1`) sean rechazadas o neutralizadas.
+- **PSeg-4.4:** Verificar que el sistema rechace JWT inválidos o expirados → HTTP 401.
+- **PSeg-4.5:** Verificar que el rate limiting bloquee múltiples solicitudes excesivas consecutivas.
 
 ### Prueba de Humo (Smoke Test)
-- **PS-4.1:** Flujo completo sin autenticación: ingresar a `GET /eventos` → aplicar filtro por tipo → ver detalle de un evento → verificar que el botón de inscripción está activo.
-- **PS-4.2:** Flujo de organizador: login → crear evento → completar datos → publicar → verificar aparición en listado público.
+- **PS-4.1:** Ingresar al listado público → aplicar filtros → ver detalle.
+- **PS-4.2:** Login organizador → crear evento → publicar → verificar listado.
 
 ### Criterio de Aceptación General
-El módulo se considera completo cuando: (1) un organizador puede llevar un evento desde `borrador` hasta `finalizado` o `cancelado` sin errores, (2) el listado público refleja correctamente los estados y cupos en tiempo real, y (3) todos los criterios de aceptación de las HU 4.1 a 4.6 están verificados.
+El módulo se considera completo cuando:
+1. Un organizador puede gestionar eventos sin errores.
+2. El listado público refleja correctamente estados y cupos.
+3. Todos los criterios de aceptación están verificados.
+4. Las validaciones y controles OWASP funcionan correctamente.

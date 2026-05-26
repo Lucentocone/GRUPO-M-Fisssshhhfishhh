@@ -26,6 +26,17 @@ Criterios de Aceptación:
 *   **Formatos:** Exportable a PDF y CSV.
 *   **SLA de Performance:** Generación en `< 10 segundos` para payloads de hasta 500 registros.
 
+> **🔐 [OWASP] Criterios de Aceptación de Seguridad — Enriquecimiento (A01:2021 · Broken Access Control)**
+>
+> El endpoint de exportación expone datos personales sensibles (DNI, email) de todos los inscriptos. El riesgo de control de acceso roto aplica directamente: un usuario sin rol `organizador` podría solicitar el reporte directamente vía URL manipulada, obteniendo el padrón completo del evento.
+>
+> *   **[OWASP-A01] Validación de autorización server-side:** El backend debe verificar en cada request que el `id_usuario` presente en el JWT tiene el rol `organizador` **y** es propietario del evento (`id_evento`) solicitado. Esta validación debe ocurrir en la capa de controladores, independientemente de que el botón de exportación esté oculto en la UI para usuarios sin permisos.
+>     *   Test: Solicitar `GET /eventos/{id}/reportes/inscripciones` con un JWT de rol `participante` → debe retornar **HTTP 403 Forbidden**.
+>     *   Test: Solicitar el reporte de un evento ajeno con un JWT de `organizador` de otro evento → debe retornar **HTTP 403 Forbidden**.
+> *   **[OWASP-A03] Sanitización de parámetros de filtro:** Los filtros de consulta (`fecha_desde`, `fecha_hasta`, `rol`, `modalidad`) deben ser validados y tipados antes de ser utilizados en queries a la base de datos. Deben usarse consultas parametrizadas (prepared statements) para prevenir inyección SQL.
+>     *   Test: Enviar `fecha_desde=1' OR '1'='1` → debe retornar HTTP 400 Bad Request sin ejecutar ninguna consulta.
+> *   **[OWASP-A02] Canal seguro obligatorio:** Los endpoints de exportación deben estar disponibles únicamente sobre HTTPS. Cualquier solicitud HTTP no cifrada debe redirigirse con **301** o rechazarse. El archivo descargado no debe contener más datos de los estrictamente necesarios (principio de minimización).
+
 ### HU 5.2: Reporte de presentismo (Post-evento)
 Como organizador, quiero un informe de asistencia real, para auditar a quiénes corresponde el certificado y analizar el *drop-off* de inscriptos vs. asistentes.
 
@@ -35,6 +46,16 @@ Criterios de Aceptación:
 *   **Permisos:** Exclusivo para el rol `organizador` del evento en cuestión.
 *   **Edge case:** Si se intenta generar antes de la fecha del evento, mostrar un *warning* indicando que la data de asistencia aún no es definitiva.
 *   **Formatos:** PDF y CSV.
+
+> **🔐 [OWASP] Criterios de Aceptación de Seguridad — Enriquecimiento (A09:2021 · Security Logging and Monitoring Failures)**
+>
+> El reporte de presentismo es el artefacto más sensible del módulo: combina datos personales con información de comportamiento (timestamp de ingreso, método de acceso). El acceso indebido o no auditado a este reporte representa una violación de privacidad grave. OWASP A09 exige que los eventos de acceso a datos sensibles sean registrados de forma confiable.
+>
+> *   **[OWASP-A09] Registro de auditoría completo:** Cada generación o descarga del reporte de presentismo debe registrarse en la tabla `Audit_Reportes` con: `id_usuario`, `id_evento`, `tipo = 'asistencia'`, `formato`, `ip_origen` y `timestamp`. Este log no debe poder ser eliminado ni modificado por ningún rol de la aplicación.
+>     *   Test: Descargar el reporte de asistencia → verificar que se insertó un registro en `Audit_Reportes` con los campos correctos.
+>     *   Test: Intentar eliminar un registro de `Audit_Reportes` desde la API → debe retornar **HTTP 405 Method Not Allowed** (endpoint de solo escritura/lectura, sin DELETE).
+> *   **[OWASP-A01] Re-validación de ownership en asistencia:** Dado que los timestamps de ingreso pueden usarse para perfilar comportamientos, el control de acceso debe ser especialmente estricto. Si el token JWT no contiene el claim `organizador` del evento específico, el servidor debe retornar **HTTP 403** sin revelar si el evento existe o no (respuesta genérica para evitar enumeración).
+> *   **[OWASP-A04] Rate limiting en exportación:** Para prevenir la extracción masiva y automatizada de datos de asistentes, el endpoint debe implementar un límite de solicitudes por usuario (ej. máximo 10 exportaciones por hora por `id_usuario`). Al superarse, retornar **HTTP 429 Too Many Requests**.
 
 ### HU 5.3: Generación de agenda
 Como organizador, quiero compilar el cronograma en un documento formal, para distribuirlo a los asistentes y disertantes.
